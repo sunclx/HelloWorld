@@ -14,22 +14,22 @@ Opt("GUIOnEventMode", 1)
 
 
 Local $frmMain, $lblTimer, $btnStart, $btnTask, $btnExtra, $btnInterrupt, $btnNext, $btnDel, $btnAdd, $lv
-Local $frmNew, $iptNewName, $iptNewPomos, $btnNewOK
-Local $startTimeFlag = 0, $duration = 25, $shortBreak = 0.1, $longBreak = 0.2, $interval = 2, $startTime = 0.2
+Local $frmNew, $btnNewOK, $iptNewName, $iptNewPomos
+Local $frm,$btnOK,$ipt
+Local $startTimeFlag = 0, $duration = 25, $shortBreak = 5, $longBreak = 20, $interval = 4, $startTime = 25
 Local $runtime
 Local $name, $e, $p, $u, $i
 Local $ibtnNew = 0, $ii
-Local $ia = 0, $ib = 0, $ic = 0
+Local $ia = 0, $ib = 0, $ic = 0,$iw
 
 _main()
 
 Func _main()
 	createmainform()
-	creatnewtaskform()
 	GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 	GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY")
 	readDate()
-	writeDate()
+	
 	While 1
 		If _GUICtrlListView_GetSelectedIndices($lv) <> "" Then
 			_GUICtrlButton_Enable($btnStart, True)
@@ -50,10 +50,12 @@ Func _main()
 						If refleshlabel($startTime) Then
 							$ia = 1
 							$ib = $ib + 1
+							$e+=1
+							_GUICtrlListView_SetItemText($lv, $iw, $e, 1)
 						EndIf
 					Case 1
 						If Mod($ib, $interval) = 0 Then
-							If refleshlabel(0.3) Then $ia = 2
+							If refleshlabel($longBreak) Then $ia = 2
 						Else
 							If refleshlabel($shortBreak) Then $ia = 2
 						EndIf
@@ -126,6 +128,17 @@ Func creatnewtaskform();#region 新任务界面### START Koda GUI section ###
 	$btnNewOK = _GUICtrlButton_Create($frmNew, "确定", 376, 7, 75, 22)
 	GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 EndFunc   ;==>creatnewtaskform
+Func createform($name="")
+	$frm = GUICreate($name, 314, 41, 192, 124)
+	GUISetOnEvent($GUI_EVENT_CLOSE, "frmNew")
+	GUISetOnEvent($GUI_EVENT_MINIMIZE, "frmNew")
+
+	$ipt = GUICtrlCreateInput("", 8, 8, 209, 24)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+	$btnOK = _GUICtrlButton_Create($frm, "确定", 232, 8, 75, 25)
+	GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+	GUISetState(@SW_SHOW)
+EndFunc
 #endregion ## 界面函数 ###
 #region ## 控件函数 ###
 Func WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
@@ -146,6 +159,8 @@ Func WM_COMMAND($hWnd, $Msg, $wParam, $lParam)
 		Case $btnDel
 			If $nNotifyCode = $BN_CLICKED Then del()
 		Case $btnAdd
+			If $nNotifyCode = $BN_CLICKED Then add()
+		Case $btnOK
 			If $nNotifyCode = $BN_CLICKED Then add()
 			;EndSwitch
 			;Return 0 ; Only workout clicking on the button
@@ -178,9 +193,14 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>WM_NOTIFY
 
+Func uplaned()
+EndFunc	
+	
 Func btnStart()
 	Switch $ibtnNew
 		Case 0
+			setparam()
+			$iw= _GUICtrlListView_GetSelectedIndices($lv)
 			$startTimeFlag = TimerInit()
 			_GUICtrlButton_SetText($btnStart, "停止")
 			$ibtnNew = 1
@@ -194,10 +214,12 @@ EndFunc   ;==>btnStart
 
 Func exitMain()
 	DllCall("user32.dll", "int", "AnimateWindow", "hwnd", $frmMain, "int", 500, "long", 0x00090000)
+	writeDate()
 	Exit
 EndFunc   ;==>exitMain
 Func frmNew()
-	GUISetState(@SW_HIDE, $frmNew)
+	GUIDelete ( $frmNew )
+	GUIDelete ( $frm )
 EndFunc   ;==>frmNew
 Func tasklist()
 	;GUICtrlSetState($lv,$GUI_HIDE)
@@ -223,7 +245,11 @@ Func btnNewOK()
 	EndIf
 EndFunc   ;==>btnNewOK
 
+Func btnOK()
+	
+	EndFunc
 Func add()
+	creatnewtaskform()
 	GUISetState(@SW_SHOW, $frmNew)
 EndFunc   ;==>add
 
@@ -231,7 +257,7 @@ Func del()
 	_GUICtrlListView_DeleteItemsSelected($lv)
 EndFunc   ;==>del
 Func itm()
-	setparam()
+	
 EndFunc   ;==>itm
 #endregion ## 控件函数 ###
 #region ### 功能函数 ###
@@ -296,21 +322,19 @@ Func writeDate()
 	$x = _GUICtrlListView_GetItemCount($lv)
 	$y = _GUICtrlListView_GetColumnCount($lv)
 	ConsoleWrite($x)
-	Local $s1 = "", $s2 = "", $ip = 0
+	Local $s1 = "", $s2 = ""
 	For $i = 0 To $x - 1
-		$s1 = ""
-		$ip = 0
 		$s1 = "[" & $i + 1 & "]"
-		For $j = 0 To $y - 1
-			$tmp = _GUICtrlListView_GetItemText($lv, $i, $j)
-			$s1 = $s1 & Chr(9) & $tmp
-		Next
+		$s1&=Chr(9) &"name:"& _GUICtrlListView_GetItemText($lv, $i, 0)
+		$s1&=Chr(9) &"e:"& _GUICtrlListView_GetItemText($lv, $i, 1)
+		$s1&=Chr(9) &"p:"& _GUICtrlListView_GetItemText($lv, $i, 2)
+		$s1&=Chr(9) &"u:"& _GUICtrlListView_GetItemText($lv, $i, 3)
+		$s1&=Chr(9) &"i:"& _GUICtrlListView_GetItemText($lv, $i, 4)
 		$s2 = $s2 & $s1
 		If $i < $x - 1 Then $s2 = $s2 & @CRLF
 	Next
 	ConsoleWrite($s2)
-	;_FileCreate("tomator1.ini")
-	$file = FileOpen("tomator1.ini", 2)
+	$file = FileOpen("tomator.ini", 2)
 	FileWrite($file ,$s2)
 	FileClose($file )
 EndFunc   ;==>writeDate
